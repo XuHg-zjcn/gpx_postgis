@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # Copyright (C) 2025  Xu Ruijun
 # SPDX-License-Identifier: MIT
+echo 'This script is Deprecated, advice using `import_gpx.py`'
 for file in $1/*.gpx; do
     echo $file
     ogr2ogr -update -append -f "PostgreSQL" PG:"dbname=gps_routes" \

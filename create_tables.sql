@@ -19,11 +19,11 @@ CREATE TABLE points_data (
 
 CREATE TABLE tracks_data (
     id SERIAL PRIMARY KEY,
-    uuid UUID,
+    uuid UUID UNIQUE,
     name TEXT,
     descript TEXT,
     type TEXT,
-    track GEOMETRY(MULTILINESTRING),
+    track GEOMETRY(MULTILINESTRING, 4326),
     point_start GEOMETRY(Point, 4326),
     point_end GEOMETRY(Point, 4326),
     bbox GEOMETRY(Polygon, 4326),

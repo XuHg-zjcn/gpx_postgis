@@ -10,17 +10,20 @@
 1. 安装依赖 PostgreSQL, PostGIS, GDAL
 2. `createdb -E utf8 gps_routes`创建数据库
 3. `psql -d gps_routes -f create_tables.sql`
-4. `sh import_opentracks.sh /path-to-gpx-dir`选择一个包含GPX文件的文件夹，目前只支持OpenTracks的轨迹
+4. `python import_gpx.py /path-to-gpx-dir`选择一些GPX文件或文件夹，文件夹则会递归导入GPX文件，目前只支持OpenTracks的轨迹
 5. QGIS浏览器面板中创建PostGIS连接，名称随便起一个，服务不用填，如果用本机的数据库不用填主机，数据库填`gps_routes`，点击确定
 6. PostGIS下该连接的public里能看到各种数据，双击就能加载
 
 该方法没有验证过，是按照自己操作的大致过程编写，可能有误
 
+## 现有功能
+- 导入OpenTracks记录的GPS轨迹
+- 避免重复导入(按OpenTracks的UUID)
+
 ## 待实现功能
 - 用Python程序计算`tracks_data`表中空白字段
-- 处理OSMTracker和其他来源的GPX文件
-- 避免重复导入
 - 导入其他程序记录的GPX轨迹
+- 导入照片的GPS信息
 
 ## 一些技巧
 ```sh
