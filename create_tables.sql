@@ -33,3 +33,27 @@ CREATE TABLE tracks_data (
     distance FLOAT,
     speed_max FLOAT
 );
+
+CREATE TABLE photos (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    posit GEOMETRY(PointZ, 4326),
+    ts TIMESTAMP,
+    yaw FLOAT,
+    pitch FLOAT,
+    roll FLOAT,
+    path TEXT UNIQUE NOT NULL,
+    sha256 BYTEA UNIQUE NOT NULL
+);
+
+/* 用于QGIS中ImportPhotos插件的兼容格式 */
+CREATE VIEW qgis_importphotos AS
+SELECT id,
+    name,
+    posit,
+    ST_Z(posit) AS altitude,
+    ts AS timestamp,
+    path,
+    TO_CHAR(ts, 'YYYY-MM-DD') AS date,
+    TO_CHAR(ts, 'HH24:MI:SS') AS time
+FROM photos;
