@@ -36,10 +36,10 @@ def get_exif_dict(path):
             lat *= -1
         d['lat'] = lat
 
-    alt = tags.get('GPS GPSLatitude')
+    alt = tags.get('GPS GPSAltitude')
     if alt is not None:
         altv = alt.values[0]
-        if tags.get('GPS GPSLatitudeRef').values[0] == 1:
+        if tags.get('GPS GPSAltitudeRef').values[0] == 1:
             altv *= -1
         d['alt'] = float(altv)
 
