@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: MIT
 import sys
 import os
-import exifread
+import re
+import exiftool
 import psycopg2
 import hashlib
 from datetime import datetime
@@ -20,33 +21,40 @@ def calc_sha256(path):
 
 def get_exif_dict(path):
     d = {}
-    with open(path, 'rb') as f:
-        tags = exifread.process_file(f)
-    lon_dms = tags.get('GPS GPSLongitude')
-    if lon_dms is not None:
-        lon = lon_dms.values[0]+lon_dms.values[1]/60.0+lon_dms.values[2]/3600.0
-        if tags.get('GPS GPSLongitudeRef').values == 'W':
-            lon *= -1
-        d['lon'] = lon
-
-    lat_dms = tags.get('GPS GPSLatitude')
-    if lat_dms is not None:
-        lat = lat_dms.values[0]+lat_dms.values[1]/60.0+lat_dms.values[2]/3600.0
-        if tags.get('GPS GPSLatitudeRef').values == 'S':
-            lat *= -1
-        d['lat'] = lat
-
-    alt = tags.get('GPS GPSAltitude')
-    if alt is not None:
-        altv = alt.values[0]
-        if tags.get('GPS GPSAltitudeRef').values[0] == 1:
-            altv *= -1
-        d['alt'] = float(altv)
-
-    dt = tags.get('Image DateTime')
+    tags = et.get_metadata([path])[0]
+    if 'Composite:GPSLongitude' in tags:
+        d['lon'] = tags.get('Composite:GPSLongitude')
+    if 'Composite:GPSLatitude' in tags:
+        d['lat'] = tags.get('Composite:GPSLatitude')
+    if 'Composite:GPSAltitude' in tags:
+        d['alt'] = tags.get('Composite:GPSAltitude')
+    dt = tags.get('Composite:SubSecDateTimeOriginal')
     if dt is not None:
-        dt2 = datetime.strptime(dt.values, '%Y:%m:%d %H:%M:%S')
-        d['ts'] = dt2
+        d['ts'] = datetime.strptime(dt, '%Y:%m:%d %H:%M:%S.%f')
+
+    d['img_width'] = tags.get('File:ImageWidth')
+    d['img_height'] = tags.get('File:ImageHeight')
+    if 'EXIF:ExposureTime' in tags:
+        d['exposure_time'] = tags.get('EXIF:ExposureTime')
+    if 'EXIF:FocalLengthIn35mmFormat' in tags:
+        d['efl35mm'] = tags.get('EXIF:FocalLengthIn35mmFormat')
+    if 'EXIF:ISO' in tags:
+        d['iso'] = tags.get('EXIF:ISO')
+    if 'EXIF:Make' in tags:
+        d['make'] = tags.get('EXIF:Make')
+    if 'EXIF:Model' in tags:
+        d['model'] = tags.get('EXIF:Model')
+    if 'EXIF:GPSImgDirection' in tags:
+        d['yaw'] = tags.get('EXIF:GPSImgDirection')
+    if 'EXIF:UserComment' in tags:  # exifread库无法正确读取UserComment，改用exiftool
+        comment = tags.get('EXIF:UserComment')  # OpenCamera APP的三轴运动信息
+        m = re.match(r'^Yaw:(-?\d+\.?\d*),Pitch:(-?\d+\.?\d*),Roll:(-?\d+\.?\d*)$', comment)
+        if m is not None:
+            d['yaw'] = float(m.group(1))
+            d['pitch'] = float(m.group(2))
+            d['roll'] = float(m.group(3))
+        else:
+            print(comment)
     return d
 
 
@@ -101,7 +109,9 @@ def import_dir(path):
     for root, dirs, files in os.walk(path):
         for f in files:
             if(f[-4:] == '.jpg'):
-                import_file(os.path.join(root, f))
+                path = os.path.join(root, f)
+                print(path)
+                import_file(path)
 
 
 def import_dir_or_file(path):
@@ -112,6 +122,7 @@ def import_dir_or_file(path):
 
 
 if __name__ == '__main__':
+    et = exiftool.ExifToolHelper()
     connection = psycopg2.connect("dbname=gps_routes")
     for path in sys.argv[1:]:
         import_dir_or_file(path)
